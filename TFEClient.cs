@@ -135,7 +135,10 @@ namespace LanCopyFiles.TranferFilesEngine
 					// Console.WriteLine("Client: received: " + message);
 					// return Task.CompletedTask;
 
-                    if (c.ByteBuffer.Dequeue(1)[0] == 2)
+                    var initializeByte = c.ByteBuffer.Dequeue(1)[0];
+
+
+					if (initializeByte == 2)
                     {
 
 						// byte[] cmdBuffer = new byte[3];
@@ -143,10 +146,45 @@ namespace LanCopyFiles.TranferFilesEngine
 
                         var cmdBuffer = c.ByteBuffer.Dequeue(3);
 
+                        var separatorByte = c.ByteBuffer.Dequeue(1)[0];
 
-                        byte[] recv_data = ReadStream(ns);
+						var dataBytes = c.ByteBuffer.Dequeue(count - 5);
+
+                        if (separatorByte == 4)
+                        {
+							switch (Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer)))
+                            {
+                                case 126:
+                                    long receivedFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
+                                    if (receivedFilePointer != fs.Length)
+                                    {
+                                        fs.Seek(receivedFilePointer, SeekOrigin.Begin);
+                                        int tempBufferLength = (int)(fs.Length - receivedFilePointer < 20000 ? fs.Length - receivedFilePointer : 20000);
+                                        byte[] tempBuffer = new byte[tempBufferLength];
+                                        fs.Read(tempBuffer, 0, tempBuffer.Length);
+                                        byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("127"), tempBuffer);
+                                        ns.Write(dataToSend, 0, dataToSend.Length);
+                                        ns.Flush();
+                                        ProgressValue = (int)Math.Ceiling((double)receivedFilePointer / (double)fs.Length * 100);
+                                    }
+                                    else
+                                    {
+                                        byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("128"), Encoding.UTF8.GetBytes("Close"));
+                                        ns.Write(dataToSend, 0, dataToSend.Length);
+                                        ns.Flush();
+                                        fs.Close();
+                                        // loop_break = true;
+                                    }
+                                    // break;
+								default:
+                                    // break;
+                            }
+						}
+
 
 					}
+                    return Task.CompletedTask;
+
 				}
 			};
 			client.Message += (s, a) => Console.WriteLine("Client: " + a.Message);
@@ -184,15 +222,15 @@ namespace LanCopyFiles.TranferFilesEngine
             var buffLength = Encoding.UTF8.GetString(receivedBuff[0..(separatorIndex - 1)]);
             var dataBuff = receivedBuff[(separatorIndex + 1) .. receivedBuff.Length]; /*https://stackoverflow.com/a/55498674*/
 
-			int dataLength = Convert.ToInt32(buffLength);
-            dataBuff = new byte[dataLength];
-            int byteRead = 0;
-            int byteOffset = 0;
-            while (byteOffset < dataLength)
-            {
-                byteRead = ns.Read(dataBuff, byteOffset, dataLength - byteOffset);
-                byteOffset += byteRead;
-            }
+			// int dataLength = Convert.ToInt32(buffLength);
+   //          dataBuff = new byte[dataLength];
+   //          int byteRead = 0;
+   //          int byteOffset = 0;
+   //          while (byteOffset < dataLength)
+   //          {
+   //              byteRead = ns.Read(dataBuff, byteOffset, dataLength - byteOffset);
+   //              byteOffset += byteRead;
+   //          }
 
             return dataBuff;
         }

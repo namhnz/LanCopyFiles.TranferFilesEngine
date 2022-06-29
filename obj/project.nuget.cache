@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "TFEcAjeh9MZLauovK4x8NYFT1EiHyW2McVBFPTJnfYrKh0rb2RmrgViqDGypMjxLL6klO8TQsRe7HmGD8gdHuA==",
+  "dgSpecHash": "Z4s4DIiathpuo1kkx5TtaCAAwUa6Dkv3x6O2GVeqIZSLapRiTp+ymGcc8O8yBLHpzR2Vn9S8f5Ry8JDgM/e0Ow==",
   "success": true,
-  "projectFilePath": "E:\\Documents\\TEST_PROJ\\LanCopyFiles.TranferFilesEngine\\LanCopyFiles.TranferFilesEngine.csproj",
+  "projectFilePath": "D:\\User Data\\Documents\\TEST_PROJ\\LanCopyFiles.TranferFilesEngine\\LanCopyFiles.TranferFilesEngine.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\namqh\\.nuget\\packages\\unclassified.asynctcpclient\\1.0.2\\unclassified.asynctcpclient.1.0.2.nupkg.sha512"
   ],
