@@ -2,9 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LanCopyFiles.TranferFilesEngine;
+namespace LanCopyFiles.TransferFilesEngine.Client;
 
-public static class ClientCommandHandler
+public static class ServerCommandEx
 {
     public static bool CommandAvailable { get; set; }
 

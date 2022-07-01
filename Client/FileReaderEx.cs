@@ -1,11 +1,7 @@
-﻿using System;
-using System.IO;
-using System.Reflection.Metadata;
+﻿using System.IO;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace LanCopyFiles.TranferFilesEngine;
+namespace LanCopyFiles.TransferFilesEngine.Client;
 
 public class FileReaderEx
 {

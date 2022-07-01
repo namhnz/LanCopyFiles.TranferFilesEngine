@@ -1,4 +1,4 @@
-﻿namespace LanCopyFiles.TranferFilesEngine;
+﻿namespace LanCopyFiles.TransferFilesEngine.Client;
 
 public class FileReadResult
 {
