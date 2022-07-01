@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace LanCopyFiles.TransferFilesEngine.Client;
 
-public static class ServerCommandEx
+public static class ServerCommandHandlerEx
 {
     public static bool CommandAvailable { get; set; }
 
@@ -27,10 +27,8 @@ public static class ServerCommandEx
         return commandNum;
     }
 
-    public static async Task<int> GetCommandAsync(CancellationToken cancellationToken)
+    public static async Task<int?> GetCommandAsync(CancellationToken cancellationToken)
     {
-        string message = "";
-
         while (true)
         {
             while (!CommandAvailable)
@@ -42,13 +40,9 @@ public static class ServerCommandEx
             switch (commandInfo)
             {
                 case 126:
-                    
-                    break;
+                    return 126;
                 default:
-                    // Input character
-                    message += commandInfo.KeyChar;
-                    Console.Write(commandInfo.KeyChar);
-                    break;
+                    return null;
             }
         }
 	}

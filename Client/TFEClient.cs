@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Unclassified.Net;
 
@@ -55,6 +56,8 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 			server.Message += (s, a) => Console.WriteLine("Server: " + a.Message);
 			var serverTask = server.RunAsync();
 
+			long receiveFilePointer = 0;
+
 			var client = new AsyncTcpClient
 			{
 				IPAddress = IPAddress.IPv6Loopback,
@@ -67,6 +70,12 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 					// Console.WriteLine("Client: type a message at the prompt, or empty to quit (server shutdown in 10s)");
 
 					Debug.WriteLine("Client connected to server");
+                    // Gui ten file
+                    var filePath = @"C:\";
+
+                    string selectedFile = filePath;
+
+                    var fileReader = new FileReaderEx(selectedFile);
 
 					while (true)
 					{
@@ -92,10 +101,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 						// 	break;
 						// }
 
-                        // Gui ten file
-						var filePath = @"C:\";
-
-                        string selectedFile = filePath;
+                        
                         string fileName = Path.GetFileName(selectedFile);
 
                         byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("125"), Encoding.UTF8.GetBytes(fileName));
@@ -113,15 +119,62 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 						{
 							break;
 						}
+
+
+
+
+
+
+                        var serverCommandHandlerCts = new CancellationTokenSource();
+
+
+
+                        var serverCommandHandlerTask = ServerCommandHandlerEx.GetCommandAsync(serverCommandHandlerCts.Token);
+
+						// Wait for receive stream or closed connection
+                        var completedTask = await Task.WhenAny(serverCommandHandlerTask, c.ClosedTask);
+                        if (completedTask == c.ClosedTask)
+                        {
+							// Closed connection
+                            serverCommandHandlerCts.Cancel();
+                            break;
+                        }
+
+                        var serverCommandNum = await serverCommandHandlerTask;
+                        if (serverCommandNum == 126)
+                        {
+                            var fileReaderResult = await fileReader.ReadPartAsync();
+
+                            var fileDataToSendBytes =
+                                CreateDataPacket(Encoding.UTF8.GetBytes(fileReaderResult.ReadResultNum.ToString()),
+                                    fileReaderResult.DataRead);
+
+                            await c.Send(new ArraySegment<byte>(fileDataToSendBytes, 0, fileDataToSendBytes.Length));
+
+                            // Wait for server response or closed connection
+                            await c.ByteBuffer.WaitAsync();
+                            if (c.IsClosing)
+                            {
+                                break;
+                            }
+						}
+                        else
+                        {
+							// Close the client connection
+                            c.Disconnect();
+                            break;
+						}
+
+
 					}
 					// NOTE: The client connection will NOT be closed automatically when this method
 					//       returns. It has to be closed explicitly when desired.
 
-                    
 
-                    // FileStream fs = new FileStream(Selected_file, FileMode.Open);
-                    // TcpClient tc = new TcpClient(TargetIP, Port);
-                    // NetworkStream ns = tc.GetStream();
+
+					// FileStream fs = new FileStream(Selected_file, FileMode.Open);
+					// TcpClient tc = new TcpClient(TargetIP, Port);
+					// NetworkStream ns = tc.GetStream();
 
 
 				},
@@ -149,33 +202,39 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                         if (separatorByte == 4)
                         {
-							switch (Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer)))
-                            {
-                                case 126:
-                                    long receivedFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
-                                    if (receivedFilePointer != fs.Length)
-                                    {
-                                        fs.Seek(receivedFilePointer, SeekOrigin.Begin);
-                                        int tempBufferLength = (int)(fs.Length - receivedFilePointer < 20000 ? fs.Length - receivedFilePointer : 20000);
-                                        byte[] tempBuffer = new byte[tempBufferLength];
-                                        fs.Read(tempBuffer, 0, tempBuffer.Length);
-                                        byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("127"), tempBuffer);
-                                        ns.Write(dataToSend, 0, dataToSend.Length);
-                                        ns.Flush();
-                                        ProgressValue = (int)Math.Ceiling((double)receivedFilePointer / (double)fs.Length * 100);
-                                    }
-                                    else
-                                    {
-                                        byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("128"), Encoding.UTF8.GetBytes("Close"));
-                                        ns.Write(dataToSend, 0, dataToSend.Length);
-                                        ns.Flush();
-                                        fs.Close();
-                                        // loop_break = true;
-                                    }
-                                    // break;
-								default:
-                                    // break;
-                            }
+                            var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
+
+                            receiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
+
+							ServerCommandHandlerEx.SetCommandNum(cmdNum);
+
+							// switch ()
+       //                      {
+       //                          case 126:
+       //                              long receivedFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
+       //                              if (receivedFilePointer != fs.Length)
+       //                              {
+       //                                  fs.Seek(receivedFilePointer, SeekOrigin.Begin);
+       //                                  int tempBufferLength = (int)(fs.Length - receivedFilePointer < 20000 ? fs.Length - receivedFilePointer : 20000);
+       //                                  byte[] tempBuffer = new byte[tempBufferLength];
+       //                                  fs.Read(tempBuffer, 0, tempBuffer.Length);
+       //                                  byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("127"), tempBuffer);
+       //                                  ns.Write(dataToSend, 0, dataToSend.Length);
+       //                                  ns.Flush();
+       //                                  ProgressValue = (int)Math.Ceiling((double)receivedFilePointer / (double)fs.Length * 100);
+       //                              }
+       //                              else
+       //                              {
+       //                                  byte[] dataToSend = CreateDataPacket(Encoding.UTF8.GetBytes("128"), Encoding.UTF8.GetBytes("Close"));
+       //                                  ns.Write(dataToSend, 0, dataToSend.Length);
+       //                                  ns.Flush();
+       //                                  fs.Close();
+       //                                  // loop_break = true;
+       //                              }
+       //                              // break;
+							// 	default:
+       //                              // break;
+       //                      }
 						}
 
 
@@ -184,6 +243,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
 				}
 			};
+
 			client.Message += (s, a) => Console.WriteLine("Client: " + a.Message);
 			var clientTask = client.RunAsync();
 
