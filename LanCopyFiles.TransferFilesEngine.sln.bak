@@ -5,7 +5,7 @@ VisualStudioVersion = 17.2.32602.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanCopyFiles.TransferFilesEngine", "LanCopyFiles.TransferFilesEngine.csproj", "{067A6258-0915-4F29-A9F0-35D435C4B60D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanCopyFiles.TransferFilesEngine.Test", "Test\LanCopyFiles.TransferFilesEngine.Test.csproj", "{B7E47A0C-68AD-48F4-827F-B023D1E8C7D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanCopyFiles.TransferFilesEngine.Test", "LanCopyFiles.TransferFilesEngine.Test\LanCopyFiles.TransferFilesEngine.Test.csproj", "{B7E47A0C-68AD-48F4-827F-B023D1E8C7D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

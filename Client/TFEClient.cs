@@ -11,26 +11,36 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 {
     public class TFEClient
     {
+        private readonly int _port;
+
+        public TFEClient(int port)
+        {
+            _port = port;
+        }
+
+        public void StartClient(string selectedFilePath)
+        {
+            RunClientAsync(selectedFilePath);
+        }
+
         /// <summary>
         /// Demonstrates the client and server by using the classes directly with callback methods.
         /// </summary>
         /// <returns></returns>
-        private async Task RunClientAsync()
+        private async Task RunClientAsync(string filePath)
         {
-            int port = 8085;
-
             FileReaderEx fileReader = null;
 
             var client = new AsyncTcpClient
             {
-                IPAddress = IPAddress.Loopback,
-                Port = port,
+                IPAddress = IPAddress.IPv6Loopback,
+                Port = _port,
                 //AutoReconnect = true,
                 ConnectedCallback = async (c, isReconnected) =>
                 {
                     Debug.WriteLine("Client connected to server");
                     // Gui ten file
-                    var filePath = @"C:\";
+                    // var filePath = @"C:\";
 
                     string selectedFile = filePath;
 

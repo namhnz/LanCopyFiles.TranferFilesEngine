@@ -10,18 +10,38 @@ namespace LanCopyFiles.TransferFilesEngine.Server;
 
 public class TFEServer
 {
+    private readonly int _port;
+    private string _saveTo;
+
+    public TFEServer(int port, string saveTo)
+    {
+        _port = port;
+
+        // Neu saveTo la null hoac empty thi lay folder mac dinh la desktop
+        var folderForSaving = string.IsNullOrEmpty(saveTo)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+            : saveTo;
+        if (!folderForSaving.EndsWith(@"\"))
+        {
+            folderForSaving += @"\";
+        }
+
+        _saveTo = folderForSaving;
+    }
+
+    public void StartServer()
+    {
+        RunServerAsync();
+    }
+
     private async Task RunServerAsync()
     {
-        int port = 8085;
-
         FileWriterEx fileWriter = null;
-
-        string saveTo = @"C:\";
 
         var server = new AsyncTcpListener
         {
-            IPAddress = IPAddress.Any,
-            Port = port,
+            IPAddress = IPAddress.IPv6Any,
+            Port = _port,
             ClientConnectedCallback = tcpClient =>
                 new AsyncTcpClient
                 {
@@ -53,7 +73,8 @@ public class TFEServer
                                     case 125:
                                     {
                                         fileWriter =
-                                            new FileWriterEx(@"" + saveTo + Encoding.UTF8.GetString(dataReceivedBytes));
+                                            new FileWriterEx(@"" + _saveTo +
+                                                             Encoding.UTF8.GetString(dataReceivedBytes));
 
                                         var dataToSendBytes = CreateDataPacket(Encoding.UTF8.GetBytes("126"),
                                             Encoding.UTF8.GetBytes(Convert.ToString(fileWriter.CurrentFilePointer)));
@@ -90,6 +111,10 @@ public class TFEServer
                     }
                 }.RunAsync()
         };
+
+        server.Message += (s, a) => Debug.WriteLine("Server: " + a.Message);
+        var serverTask = server.RunAsync();
+        // await serverTask;
     }
 
     private byte[] CreateDataPacket(byte[] cmd, byte[] data)
