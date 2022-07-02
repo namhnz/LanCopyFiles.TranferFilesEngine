@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using LanCopyFiles.TransferFilesEngine.Server;
 using Unclassified.Net;
 
 namespace LanCopyFiles.TransferFilesEngine.Client
@@ -19,48 +20,11 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 		{
 			int port = 8085;
 
-			var server = new AsyncTcpListener
+            FileReaderEx fileReader = null;
+
+            var client = new AsyncTcpClient
 			{
-				IPAddress = IPAddress.Any,
-				Port = port,
-				ClientConnectedCallback = tcpClient =>
-					new AsyncTcpClient
-					{
-						ServerTcpClient = tcpClient,
-						ConnectedCallback = async (serverClient, isReconnected) =>
-						{
-							// await Task.Delay(500);
-							// byte[] bytes = Encoding.UTF8.GetBytes($"Hello, {tcpClient.Client.RemoteEndPoint}, my name is Server. Talk to me.");
-							// await serverClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
-
-                            
-
-                        },
-						ReceivedCallback = async (serverClient, count) =>
-						{
-							byte[] bytes = serverClient.ByteBuffer.Dequeue(count);
-							string message = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-							Console.WriteLine("Server client: received: " + message);
-
-							bytes = Encoding.UTF8.GetBytes("You said: " + message);
-							await serverClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
-
-							if (message == "bye")
-							{
-								// Let the server close the connection
-								serverClient.Disconnect();
-							}
-						}
-					}.RunAsync()
-			};
-			server.Message += (s, a) => Console.WriteLine("Server: " + a.Message);
-			var serverTask = server.RunAsync();
-
-			long receiveFilePointer = 0;
-
-			var client = new AsyncTcpClient
-			{
-				IPAddress = IPAddress.IPv6Loopback,
+				IPAddress = IPAddress.Loopback,
 				Port = port,
 				//AutoReconnect = true,
 				ConnectedCallback = async (c, isReconnected) =>
@@ -75,9 +39,9 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                     string selectedFile = filePath;
 
-                    var fileReader = new FileReaderEx(selectedFile);
+                    fileReader = new FileReaderEx(selectedFile);
 
-					while (true)
+                    while (true)
 					{
 						// Console.Write("> ");
 						// var consoleReadCts = new CancellationTokenSource();
@@ -200,13 +164,13 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
 						var dataBytes = c.ByteBuffer.Dequeue(count - 5);
 
-                        if (separatorByte == 4)
+                        if (separatorByte == 4 && fileReader != null)
                         {
                             var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                            receiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
+                            fileReader.ReceiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
 
-							ServerCommandHandlerEx.SetCommandNum(cmdNum);
+                            ServerCommandHandlerEx.SetCommandNum(cmdNum);
 
 							// switch ()
        //                      {
@@ -246,12 +210,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
 			client.Message += (s, a) => Console.WriteLine("Client: " + a.Message);
 			var clientTask = client.RunAsync();
-
-			await Task.Delay(10 * 1000);
-			Console.WriteLine("Program: stopping server");
-			server.Stop(true);
-			await serverTask;
-
+            
 			client.Dispose();
 			await clientTask;
 		}
@@ -298,11 +257,11 @@ namespace LanCopyFiles.TransferFilesEngine.Client
             initialize[0] = 2;
             byte[] separator = new byte[1];
             separator[0] = 4;
-            byte[] dataLength = Encoding.UTF8.GetBytes(Convert.ToString(data.Length));
+            // byte[] dataLength = Encoding.UTF8.GetBytes(Convert.ToString(data.Length));
             MemoryStream ms = new MemoryStream();
             ms.Write(initialize, 0, initialize.Length);
             ms.Write(cmd, 0, cmd.Length);
-            ms.Write(dataLength, 0, dataLength.Length);
+            // ms.Write(dataLength, 0, dataLength.Length);
             ms.Write(separator, 0, separator.Length);
             ms.Write(data, 0, data.Length);
 

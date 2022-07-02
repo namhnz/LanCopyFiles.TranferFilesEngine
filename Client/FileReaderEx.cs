@@ -48,6 +48,7 @@ public class FileReaderEx: IDisposable
         }
     }
 
+
     private bool disposed;
 
     ~FileReaderEx()
