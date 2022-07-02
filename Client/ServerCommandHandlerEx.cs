@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 
 namespace LanCopyFiles.TransferFilesEngine.Client;
@@ -36,6 +35,7 @@ public static class ServerCommandHandlerEx
                 cancellationToken.ThrowIfCancellationRequested();
                 await Task.Delay(10);
             }
+
             var commandInfo = ReadCommandNum();
             switch (commandInfo)
             {
@@ -45,5 +45,5 @@ public static class ServerCommandHandlerEx
                     return null;
             }
         }
-	}
+    }
 }

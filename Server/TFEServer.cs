@@ -4,14 +4,13 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using LanCopyFiles.TransferFilesEngine.Client;
 using Unclassified.Net;
 
 namespace LanCopyFiles.TransferFilesEngine.Server;
 
 public class TFEServer
 {
-    private async Task RunServer()
+    private async Task RunServerAsync()
     {
         int port = 8085;
 
@@ -29,10 +28,6 @@ public class TFEServer
                     ServerTcpClient = tcpClient,
                     ConnectedCallback = async (serverClient, isReconnected) =>
                     {
-                        // await Task.Delay(500);
-                        // byte[] bytes = Encoding.UTF8.GetBytes($"Hello, {tcpClient.Client.RemoteEndPoint}, my name is Server. Talk to me.");
-                        // await serverClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
-
                         Debug.WriteLine($"New connection from: {tcpClient.Client.RemoteEndPoint}");
                     },
                     ReceivedCallback = async (serverClient, count) =>
@@ -50,22 +45,13 @@ public class TFEServer
                             {
                                 var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                                // receiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
-                                //
-                                // ClientCommandHandlerEx.SetCommandNum(cmdNum);
-
                                 switch (cmdNum)
                                 {
                                     case 101:
-                                        //download++;
-                                        return;
+
+                                        break;
                                     case 125:
                                     {
-                                        // fs = new FileStream(@"" + SaveTo + Encoding.UTF8.GetString(recv_data), FileMode.CreateNew);
-                                        // byte[] data_to_send = CreateDataPacket(Encoding.UTF8.GetBytes("126"), Encoding.UTF8.GetBytes(Convert.ToString(current_file_pointer)));
-                                        // ns.Write(data_to_send, 0, data_to_send.Length);
-                                        // ns.Flush();
-
                                         fileWriter =
                                             new FileWriterEx(@"" + saveTo + Encoding.UTF8.GetString(dataReceivedBytes));
 
@@ -78,12 +64,6 @@ public class TFEServer
                                         break;
                                     case 127:
                                     {
-                                        // fs.Seek(current_file_pointer, SeekOrigin.Begin);
-                                        // fs.Write(recv_data, 0, recv_data.Length);
-                                        // current_file_pointer = fs.Position;
-                                        // byte[] data_to_send = CreateDataPacket(Encoding.UTF8.GetBytes("126"), Encoding.UTF8.GetBytes(Convert.ToString(current_file_pointer)));
-                                        // ns.Write(data_to_send, 0, data_to_send.Length);
-                                        // ns.Flush();
                                         if (fileWriter != null)
                                         {
                                             await fileWriter.WritePartAsync(dataReceivedBytes);
@@ -98,9 +78,6 @@ public class TFEServer
                                         break;
                                     case 128:
                                     {
-                                        // fs.Close();
-                                        // loop_break = true;
-
                                         // Let the server close the connection
                                         serverClient.Disconnect();
                                     }
@@ -109,29 +86,10 @@ public class TFEServer
                                         break;
                                 }
                             }
-
-
-                            // return Task.CompletedTask;
                         }
-
-
-                        // byte[] bytes = serverClient.ByteBuffer.Dequeue(count);
-                        // string message = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-                        // Console.WriteLine("Server client: received: " + message);
-                        //
-                        // bytes = Encoding.UTF8.GetBytes("You said: " + message);
-                        // await serverClient.Send(new ArraySegment<byte>(bytes, 0, bytes.Length));
-                        //
-                        // if (message == "bye")
-                        // {
-                        //     // Let the server close the connection
-                        //     serverClient.Disconnect();
-                        // }
                     }
                 }.RunAsync()
         };
-        // server.Message += (s, a) => Console.WriteLine("Server: " + a.Message);
-        // var serverTask = server.RunAsync();
     }
 
     private byte[] CreateDataPacket(byte[] cmd, byte[] data)
