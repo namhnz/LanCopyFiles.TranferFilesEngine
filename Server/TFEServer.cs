@@ -4,6 +4,8 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
+using LanCopyFiles.TransferFilesEngine.Helpers;
 using Unclassified.Net;
 
 namespace LanCopyFiles.TransferFilesEngine.Server;
@@ -29,12 +31,12 @@ public class TFEServer
         _saveTo = folderForSaving;
     }
 
-    public void StartServer()
+    public Task StartServer()
     {
-        RunServerAsync();
+        return RunServer();
     }
 
-    private async Task RunServerAsync()
+    private Task RunServer()
     {
         FileWriterEx fileWriter = null;
 
@@ -46,67 +48,97 @@ public class TFEServer
                 new AsyncTcpClient
                 {
                     ServerTcpClient = tcpClient,
+                    MaxConnectTimeout = TimeSpan.FromMinutes(60),
                     ConnectedCallback = async (serverClient, isReconnected) =>
                     {
                         Debug.WriteLine($"New connection from: {tcpClient.Client.RemoteEndPoint}");
+
+                        // Debug.WriteLine("Server byte buffer size: " + serverClient.ByteBuffer.Capacity);
+
+                        // var timer = new Timer();
+                        // timer.Interval = 1000;
+                        // timer.AutoReset = true;
+                        // timer.Elapsed += (sender, args) =>
+                        // {
+                        //     Debug.WriteLine("Server is closing? " + serverClient.IsClosing);
+                        // };
+                        // timer.Start();
                     },
                     ReceivedCallback = async (serverClient, count) =>
                     {
-                        var initializeByte = serverClient.ByteBuffer.Dequeue(1)[0];
-                        if (initializeByte == 2)
+                        try
                         {
-                            var cmdBuffer = serverClient.ByteBuffer.Dequeue(3);
-
-                            var separatorByte = serverClient.ByteBuffer.Dequeue(1)[0];
-
-                            var dataReceivedBytes = serverClient.ByteBuffer.Dequeue(count - 5);
-
-                            if (separatorByte == 4)
+                            var initializeByte = serverClient.ByteBuffer.Dequeue(1)[0];
+                            if (initializeByte == 2)
                             {
-                                var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
+                                var cmdBuffer = serverClient.ByteBuffer.Dequeue(3);
 
-                                switch (cmdNum)
+                                var separatorByte = serverClient.ByteBuffer.Dequeue(1)[0];
+
+                                var dataReceivedBytes = serverClient.ByteBuffer.Dequeue(count - 5);
+
+                                // Debug.WriteLine("Server received: data length: " + dataReceivedBytes.Length);
+
+                                if (separatorByte == 4)
                                 {
-                                    case 101:
+                                    var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                                        break;
-                                    case 125:
+                                    // Debug.WriteLine("Line 71: Server received from client command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
+
+
+                                    switch (cmdNum)
                                     {
-                                        fileWriter =
-                                            new FileWriterEx(@"" + _saveTo +
-                                                             Encoding.UTF8.GetString(dataReceivedBytes));
+                                        case 101:
 
-                                        var dataToSendBytes = CreateDataPacket(Encoding.UTF8.GetBytes("126"),
-                                            Encoding.UTF8.GetBytes(Convert.ToString(fileWriter.CurrentFilePointer)));
+                                            break;
+                                        case 125:
+                                            {
+                                                fileWriter =
+                                                    new FileWriterEx(@"" + _saveTo +
+                                                                     Encoding.UTF8.GetString(dataReceivedBytes));
 
-                                        await serverClient.Send(new ArraySegment<byte>(dataToSendBytes, 0,
-                                            dataToSendBytes.Length));
-                                    }
-                                        break;
-                                    case 127:
-                                    {
-                                        if (fileWriter != null)
-                                        {
-                                            await fileWriter.WritePartAsync(dataReceivedBytes);
-                                            var dataToSendBytes = CreateDataPacket(Encoding.UTF8.GetBytes("126"),
-                                                Encoding.UTF8.GetBytes(
-                                                    Convert.ToString(fileWriter.CurrentFilePointer)));
+                                                var dataToSendBytes = CreateDataPacket(Encoding.UTF8.GetBytes("126"),
+                                                    Encoding.UTF8.GetBytes(Convert.ToString(fileWriter.CurrentFilePointer)));
 
-                                            await serverClient.Send(new ArraySegment<byte>(dataToSendBytes, 0,
-                                                dataToSendBytes.Length));
-                                        }
+                                                await serverClient.Send(new ArraySegment<byte>(dataToSendBytes, 0,
+                                                    dataToSendBytes.Length));
+                                            }
+                                            break;
+                                        case 127:
+                                            {
+                                                if (fileWriter != null)
+                                                {
+                                                    await fileWriter.WritePartAsync(dataReceivedBytes);
+                                                    var dataToSendBytes = CreateDataPacket(Encoding.UTF8.GetBytes("126"),
+                                                        Encoding.UTF8.GetBytes(
+                                                            Convert.ToString(fileWriter.CurrentFilePointer)));
+
+                                                    await serverClient.Send(new ArraySegment<byte>(dataToSendBytes, 0,
+                                                        dataToSendBytes.Length));
+                                                }
+                                            }
+                                            break;
+                                        case 128:
+                                            {
+                                                if (fileWriter != null)
+                                                {
+                                                    fileWriter.Close();
+                                                }
+
+                                                // Let the server close the connection
+                                                serverClient.Disconnect();
+                                            }
+                                            break;
+                                        default:
+                                            break;
                                     }
-                                        break;
-                                    case 128:
-                                    {
-                                        // Let the server close the connection
-                                        serverClient.Disconnect();
-                                    }
-                                        break;
-                                    default:
-                                        break;
                                 }
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex);
+                            throw;
                         }
                     }
                 }.RunAsync()
@@ -114,7 +146,8 @@ public class TFEServer
 
         server.Message += (s, a) => Debug.WriteLine("Server: " + a.Message);
         var serverTask = server.RunAsync();
-        // await serverTask;
+
+        return serverTask;
     }
 
     private byte[] CreateDataPacket(byte[] cmd, byte[] data)

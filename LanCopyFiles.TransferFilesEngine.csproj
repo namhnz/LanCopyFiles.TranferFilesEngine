@@ -16,4 +16,8 @@
     <PackageReference Include="Unclassified.AsyncTcpClient" Version="1.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
 </Project>
