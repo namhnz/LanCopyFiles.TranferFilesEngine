@@ -188,14 +188,14 @@ namespace LanCopyFiles.TransferFilesEngine.Client
             initialize[0] = 2;
             byte[] separator = new byte[1];
             separator[0] = 4;
-            // byte[] dataLength = Encoding.UTF8.GetBytes(Convert.ToString(data.Length));
+            byte[] dataLength = Encoding.UTF8.GetBytes(Convert.ToString(data.Length));
             MemoryStream ms = new MemoryStream();
             ms.Write(initialize, 0, initialize.Length);
             ms.Write(cmd, 0, cmd.Length);
 
             // Debug.WriteLine("Client create data package: cmd: " + Encoding.UTF8.GetString(cmd));
 
-            // ms.Write(dataLength, 0, dataLength.Length);
+            ms.Write(dataLength, 0, dataLength.Length);
             ms.Write(separator, 0, separator.Length);
             ms.Write(data, 0, data.Length);
 

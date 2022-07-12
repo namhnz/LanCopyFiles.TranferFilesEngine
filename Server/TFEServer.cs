@@ -71,11 +71,37 @@ public class TFEServer
                             var initializeByte = serverClient.ByteBuffer.Dequeue(1)[0];
                             if (initializeByte == 2)
                             {
-                                var cmdBuffer = serverClient.ByteBuffer.Dequeue(3);
+                                // Doc thong tin tu client gui den server
 
-                                var separatorByte = serverClient.ByteBuffer.Dequeue(1)[0];
+                                var cmdBuffer = await serverClient.ByteBuffer.DequeueAsync(3);
 
-                                var dataReceivedBytes = serverClient.ByteBuffer.Dequeue(count - 5);
+                                var separatorByte = (await serverClient.ByteBuffer.DequeueAsync(1))[0];
+
+                                var dataReceivedBytes = await serverClient.ByteBuffer.DequeueAsync(count - 5);
+
+                                int b = 0;
+
+                                string buffLength = "";
+
+                                while ((b = serverClient.ByteBuffer.Dequeue(1)[0]) != 4)
+                                {
+                                    buffLength += (char)b;
+                                }
+
+                                int dataLength = Convert.ToInt32(buffLength);
+
+                                var dataBuff = new byte[dataLength];
+
+                                int byteRead = 0;
+                                int byteOffset = 0;
+                                while (byteOffset < dataLength)
+                                {
+                                    byteRead = ns.Read(dataBuff, byteOffset, dataLength - byteOffset);
+                                    byteOffset += byteRead;
+
+                                    var dataRead = await serverClient.ByteBuffer.DequeueAsync(dataLength - byteOffset);
+                                }
+
 
                                 // Debug.WriteLine("Server received: data length: " + dataReceivedBytes.Length);
 
@@ -156,11 +182,11 @@ public class TFEServer
         initialize[0] = 2;
         byte[] separator = new byte[1];
         separator[0] = 4;
-        // byte[] dataLength = Encoding.UTF8.GetBytes(Convert.ToString(data.Length));
+        byte[] dataLength = Encoding.UTF8.GetBytes(Convert.ToString(data.Length));
         MemoryStream ms = new MemoryStream();
         ms.Write(initialize, 0, initialize.Length);
         ms.Write(cmd, 0, cmd.Length);
-        // ms.Write(dataLength, 0, dataLength.Length);
+        ms.Write(dataLength, 0, dataLength.Length);
         ms.Write(separator, 0, separator.Length);
         ms.Write(data, 0, data.Length);
 
