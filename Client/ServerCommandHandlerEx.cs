@@ -9,15 +9,27 @@ public static class ServerCommandHandlerEx
 
     public static int CommandNum { get; set; }
 
+    private static bool _isSettingCommandNum;
+
+
     public static void SetCommandNum(int commandNum)
     {
+        _isSettingCommandNum = true;
+
         CommandNum = commandNum;
 
         CommandAvailable = true;
+
+        _isSettingCommandNum = false;
     }
 
-    public static int ReadCommandNum()
+    public static int? ReadCommandNum()
     {
+        if (_isSettingCommandNum)
+        {
+            return null;
+        }
+
         int commandNum = CommandNum;
 
         CommandNum = 0;
@@ -33,10 +45,16 @@ public static class ServerCommandHandlerEx
             while (!CommandAvailable)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                // await Task.Delay(10);
+                await Task.Delay(1);
             }
 
-            var commandInfo = ReadCommandNum();
+            int? commandInfo = null;
+
+            while (commandInfo == null)
+            {
+                commandInfo = ReadCommandNum();
+            }
+
             switch (commandInfo)
             {
                 case 126:

@@ -8,9 +8,9 @@ namespace LanCopyFiles.TransferFilesEngine.Test
     {
         static void Main(string[] args)
         {
-            if (File.Exists(@"E:\Desktop\commandos_3_-_destination_berln.rar"))
+            if (File.Exists(@"G:\User Data\Desktop\commandos_3_-_destination_berln.rar"))
             {
-                File.Delete(@"E:\Desktop\commandos_3_-_destination_berln.rar");
+                File.Delete(@"G:\User Data\Desktop\commandos_3_-_destination_berln.rar");
             }
 
             var server = new TFEServer(8085, Environment.GetFolderPath(Environment.SpecialFolder.Desktop));

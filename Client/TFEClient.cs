@@ -38,8 +38,8 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                 IPAddress = IPAddress.IPv6Loopback,
                 Port = _port,
                 //AutoReconnect = true,
-                MaxConnectTimeout = TimeSpan.FromMinutes(60),
-                ConnectedCallback = async (c, isReconnected) =>
+                
+                ConnectedCallback = async (client, isReconnected) =>
                 {
                     Debug.WriteLine("Client connected to server");
                     // Gui ten file
@@ -68,7 +68,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             Encoding.UTF8.GetBytes(fileName));
 
                         // Truyen den server
-                        await c.Send(new ArraySegment<byte>(dataToSend, 0, dataToSend.Length));
+                        await client.Send(new ArraySegment<byte>(dataToSend, 0, dataToSend.Length));
 
                         //// Wait for server response or closed connection
                         //await c.ByteBuffer.WaitAsync();
@@ -85,8 +85,8 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                                 ServerCommandHandlerEx.GetCommandAsync(serverCommandHandlerCts.Token);
 
                             // Wait for receive stream or closed connection
-                            var completedTask = await Task.WhenAny(serverCommandHandlerTask, c.ClosedTask);
-                            if (completedTask == c.ClosedTask)
+                            var completedTask = await Task.WhenAny(serverCommandHandlerTask, client.ClosedTask);
+                            if (completedTask == client.ClosedTask)
                             {
                                 // Closed connection
                                 serverCommandHandlerCts.Cancel();
@@ -94,6 +94,9 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             }
 
                             var serverCommandNum = await serverCommandHandlerTask;
+
+                            Debug.WriteLine("awaited command task: " + serverCommandNum);
+
                             if (serverCommandNum == 126)
                             {
                                 // Debug.WriteLine("Line 97: Client received from server command: " + serverCommandNum +
@@ -104,18 +107,20 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                                 var fileReaderResult = await fileReader.ReadPartAsync();
 
-                                // Debug.WriteLine("Client send: data length: " + fileReaderResult.DataRead.Length);
+                                Debug.WriteLine("Client prepare sending data");
 
                                 var fileDataToSendBytes =
                                     CreateDataPacket(Encoding.UTF8.GetBytes(fileReaderResult.ReadResultNum.ToString()),
                                         fileReaderResult.DataRead);
 
-                                await c.Send(new ArraySegment<byte>(fileDataToSendBytes, 0, fileDataToSendBytes.Length));
+                                await client.Send(new ArraySegment<byte>(fileDataToSendBytes, 0, fileDataToSendBytes.Length));
+
+                                Debug.WriteLine("Client send: data length: " + fileReaderResult.DataRead.Length);
 
 
                                 // Wait for server response or closed connection
-                                await c.ByteBuffer.WaitAsync();
-                                if (c.IsClosing)
+                                await client.ByteBuffer.WaitAsync();
+                                if (client.IsClosing)
                                 {
                                     break;
                                 }
@@ -123,10 +128,12 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             else
                             {
                                 // Close the client connection
-                                c.Disconnect();
+                                client.Disconnect();
                                 break;
                             }
                         }
+
+                        Debug.WriteLine("client while break");
                     }
                     catch (Exception ex)
                     {
@@ -136,30 +143,60 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                 // NOTE: The client connection will NOT be closed automatically when this method
                 //       returns. It has to be closed explicitly when desired.
                 },
-                ReceivedCallback = (c, count) =>
+                ReceivedCallback = (client, count) =>
                 {
                     try
                     {
-                        var initializeByte = c.ByteBuffer.Dequeue(1)[0];
+                        // Doc thong tin tu server gui lai cho client, dinh dang thong du lieu: 2 cmd data-length 4 data-bytes
 
-
+                        // Lay byte dau tien cua du lieu nhan, neu bat dau bang 2 la du lieu do client gui den
+                        var initializeByte = client.ByteBuffer.Dequeue(1)[0];
                         if (initializeByte == 2)
                         {
-                            var cmdBuffer = c.ByteBuffer.Dequeue(3);
+                            Debug.WriteLine("Client received new command, count: " + count);
 
-                            var separatorByte = c.ByteBuffer.Dequeue(1)[0];
+                            // Lay command tu client gui den server, bao gom: 127, 128 (co 3 ky tu, do dai 3 byte) 
+                            var cmdBuffer = client.ByteBuffer.Dequeue(3);
 
-                            var dataBytes = c.ByteBuffer.Dequeue(count - 5);
+                            // Lay do dai du lieu tu client gui den
+                            int dataLengthTempByte = 0;
+                            string dataReceiveLengthString = "";
 
-                            if (separatorByte == 4 && fileReader != null)
+                            while ((dataLengthTempByte = client.ByteBuffer.Dequeue(1)[0]) != 4)
+                            {
+                                dataReceiveLengthString += (char)dataLengthTempByte;
+                            }
+                            var dataReceiveLengthInt = Convert.ToInt32(dataReceiveLengthString);
+
+                            // Lay byte separator
+                            // var separatorByte = client.ByteBuffer.Dequeue(1)[0];
+
+                            // Lay du lieu duoc gui tu client duoi dang byte array
+
+                            var dataReceivedBuffer = client.ByteBuffer.Dequeue(dataReceiveLengthInt);
+
+
+                            // var initializeByte = c.ByteBuffer.Dequeue(1)[0];
+
+
+                        // if (initializeByte == 2)
+                        // {
+                        //     var cmdBuffer = c.ByteBuffer.Dequeue(3);
+
+                            // var separatorByte = client.ByteBuffer.Dequeue(1)[0];
+
+                            // var dataBytes = client.ByteBuffer.Dequeue(count - 5);
+
+                            if (/*separatorByte == 4 && */fileReader != null)
                             {
                                 var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                                // Debug.WriteLine("Line 151: Client received from server command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
+                                Debug.WriteLine("Line 151: Client received from server command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
 
-                                fileReader.ReceiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataBytes));
+                                fileReader.ReceiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataReceivedBuffer));
 
                                 ServerCommandHandlerEx.SetCommandNum(cmdNum);
+                                Debug.WriteLine("Read file command num set: " + cmdNum);
                             }
                         }
 

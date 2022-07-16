@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 // using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -35,12 +36,12 @@ public class FileReaderEx : IDisposable
         var offset = ReceiveFilePointer;
 
         // Debug.WriteLine("Client read file: total file length: " + _fileStream.Length);
-        // Debug.WriteLine("Client read file: stream position: " + offset);
+        Debug.WriteLine("Client read file: stream position: " + offset);
 
         if (offset != _fileStream.Length)
         {
             _fileStream.Seek(offset, SeekOrigin.Begin);
-            int tempBufferLength = (int)(_fileStream.Length - offset < 20000 ? _fileStream.Length - offset : 20000);
+            int tempBufferLength = (int)(_fileStream.Length - offset < 1000 ? _fileStream.Length - offset : 1000);
             byte[] tempBuffer = new byte[tempBufferLength];
             await _fileStream.ReadAsync(tempBuffer, 0, tempBuffer.Length);
             // Debug.WriteLine("Client read file: read bytes length: " + tempBuffer.Length);
