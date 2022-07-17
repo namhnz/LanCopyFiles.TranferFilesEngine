@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using LanCopyFiles.TransferFilesEngine.Helpers;
 using Unclassified.Net;
-using Timer = System.Timers.Timer;
 
 namespace LanCopyFiles.TransferFilesEngine.Client
 {
@@ -38,7 +37,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                 IPAddress = IPAddress.IPv6Loopback,
                 Port = _port,
                 //AutoReconnect = true,
-                
+                AutoReconnect = true,
                 ConnectedCallback = async (client, isReconnected) =>
                 {
                     Debug.WriteLine("Client connected to server");
@@ -55,7 +54,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                     //     Debug.WriteLine("Client is closing? " + c.IsClosing);
                     // };
                     // timer.Start();
-
+                    
                     try
                     {
                         string selectedFile = filePath;
@@ -79,13 +78,17 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                         while (true)
                         {
+
+
                             var serverCommandHandlerCts = new CancellationTokenSource();
 
                             var serverCommandHandlerTask =
                                 ServerCommandHandlerEx.GetCommandAsync(serverCommandHandlerCts.Token);
-
+                            Debug.WriteLine("Dang cho xem cai nao hoan thanh truoc");
                             // Wait for receive stream or closed connection
                             var completedTask = await Task.WhenAny(serverCommandHandlerTask, client.ClosedTask);
+                            Debug.WriteLine("Completed client task: " + completedTask.Status);
+
                             if (completedTask == client.ClosedTask)
                             {
                                 // Closed connection
@@ -119,11 +122,11 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
 
                                 // Wait for server response or closed connection
-                                await client.ByteBuffer.WaitAsync();
-                                if (client.IsClosing)
-                                {
-                                    break;
-                                }
+                                // await client.ByteBuffer.WaitAsync();
+                                // if (client.IsClosing)
+                                // {
+                                //     break;
+                                // }
                             }
                             else
                             {

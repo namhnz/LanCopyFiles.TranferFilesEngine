@@ -35,7 +35,7 @@ public class FileReaderEx : IDisposable
     {
         var offset = ReceiveFilePointer;
 
-        // Debug.WriteLine("Client read file: total file length: " + _fileStream.Length);
+        Debug.WriteLine("Client read file: total file length: " + _fileStream.Length);
         Debug.WriteLine("Client read file: stream position: " + offset);
 
         if (offset != _fileStream.Length)
@@ -44,7 +44,7 @@ public class FileReaderEx : IDisposable
             int tempBufferLength = (int)(_fileStream.Length - offset < 1000 ? _fileStream.Length - offset : 1000);
             byte[] tempBuffer = new byte[tempBufferLength];
             await _fileStream.ReadAsync(tempBuffer, 0, tempBuffer.Length);
-            // Debug.WriteLine("Client read file: read bytes length: " + tempBuffer.Length);
+            Debug.WriteLine("Client read file: read bytes length: " + tempBuffer.Length);
 
             return new FileReadResult()
             {
