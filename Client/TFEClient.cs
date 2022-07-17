@@ -84,10 +84,10 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                             var serverCommandHandlerTask =
                                 ServerCommandHandlerEx.GetCommandAsync(serverCommandHandlerCts.Token);
-                            Debug.WriteLine("Dang cho xem cai nao hoan thanh truoc");
+                            // Debug.WriteLine("Dang cho xem cai nao hoan thanh truoc");
                             // Wait for receive stream or closed connection
                             var completedTask = await Task.WhenAny(serverCommandHandlerTask, client.ClosedTask);
-                            Debug.WriteLine("Completed client task: " + completedTask.Status);
+                            // Debug.WriteLine("Completed client task: " + completedTask.Status);
 
                             if (completedTask == client.ClosedTask)
                             {
@@ -98,7 +98,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                             var serverCommandNum = await serverCommandHandlerTask;
 
-                            Debug.WriteLine("awaited command task: " + serverCommandNum);
+                            // Debug.WriteLine("awaited command task: " + serverCommandNum);
 
                             if (serverCommandNum == 126)
                             {
@@ -110,7 +110,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                                 var fileReaderResult = await fileReader.ReadPartAsync();
 
-                                Debug.WriteLine("Client prepare sending data");
+                                // Debug.WriteLine("Client prepare sending data");
 
                                 var fileDataToSendBytes =
                                     CreateDataPacket(Encoding.UTF8.GetBytes(fileReaderResult.ReadResultNum.ToString()),
@@ -118,7 +118,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                                 await client.Send(new ArraySegment<byte>(fileDataToSendBytes, 0, fileDataToSendBytes.Length));
 
-                                Debug.WriteLine("Client send: data length: " + fileReaderResult.DataRead.Length);
+                                // Debug.WriteLine("Client send: data length: " + fileReaderResult.DataRead.Length);
 
 
                                 // Wait for server response or closed connection
@@ -136,7 +136,8 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             }
                         }
 
-                        Debug.WriteLine("client while break");
+                        // Debug.WriteLine("client while break");
+                        client.Disconnect();
                     }
                     catch (Exception ex)
                     {
@@ -156,7 +157,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                         var initializeByte = client.ByteBuffer.Dequeue(1)[0];
                         if (initializeByte == 2)
                         {
-                            Debug.WriteLine("Client received new command, count: " + count);
+                            // Debug.WriteLine("Client received new command, count: " + count);
 
                             // Lay command tu client gui den server, bao gom: 127, 128 (co 3 ky tu, do dai 3 byte) 
                             var cmdBuffer = client.ByteBuffer.Dequeue(3);
@@ -194,12 +195,12 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             {
                                 var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                                Debug.WriteLine("Line 151: Client received from server command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
+                                // Debug.WriteLine("Line 151: Client received from server command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
 
                                 fileReader.ReceiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataReceivedBuffer));
 
                                 ServerCommandHandlerEx.SetCommandNum(cmdNum);
-                                Debug.WriteLine("Read file command num set: " + cmdNum);
+                                // Debug.WriteLine("Read file command num set: " + cmdNum);
                             }
                         }
 

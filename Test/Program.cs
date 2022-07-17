@@ -28,14 +28,14 @@ namespace LanCopyFiles.TransferFilesEngine.Test
 
             var client = new TFEClient(8085);
             // var clientTask = client.StartClient(@"E:\Nam's Docs\Chu ky\huong_dan_tao_chu_ky.txt");
-            // var clientTask = client.StartClient(@"D:\commandos_3_-_destination_berln.rar");
-            var clientTask = client.StartClient(@"D:\1_001_C22THD_61_26355.pdf");
+            var clientTask = client.StartClient(@"D:\commandos_3_-_destination_berln.rar");
+            var clientTask2 = client.StartClient(@"D:\1_001_C22THD_61_26355.pdf");
 
             Task.Delay(100 * 1000).GetAwaiter().GetResult();
 
             Debug.WriteLine("Da cho xong 100s");
 
-            Task.WhenAll(serverTask, clientTask).GetAwaiter().GetResult();
+            Task.WhenAll(serverTask, clientTask, clientTask2).GetAwaiter().GetResult();
 
             Console.ReadKey();
         }

@@ -4,7 +4,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Timers;
 using LanCopyFiles.TransferFilesEngine.Helpers;
 using Unclassified.Net;
 
@@ -74,7 +73,7 @@ public class TFEServer
                             var initializeByte = serverClient.ByteBuffer.Dequeue(1)[0];
                             if (initializeByte == 2)
                             {
-                                Debug.WriteLine("Ser received new data, count: " + count);
+                                // Debug.WriteLine("Ser received new data, count: " + count);
 
                                 // Lay command tu client gui den server, bao gom: 127, 128 (co 3 ky tu, do dai 3 byte) 
                                 var cmdBuffer = await serverClient.ByteBuffer.DequeueAsync(3);
@@ -118,8 +117,8 @@ public class TFEServer
                                 // Tru cho 1 byte khoi tao, 3 byte cmd, cac byte chua so luong byte client gui den, 1 byte separator da dequeue them
                                 var bytesReceivedLeft = count - 1 - 3 - dataReceiveLengthString.Length - 1;
 
-                                Debug.WriteLine("Byte left: " + bytesReceivedLeft);
-                                Debug.WriteLine("Byte client send indicator: " + dataReceiveLengthInt);
+                                // Debug.WriteLine("Byte left: " + bytesReceivedLeft);
+                                // Debug.WriteLine("Byte client send indicator: " + dataReceiveLengthInt);
 
                                 if (bytesReceivedLeft < dataReceiveLengthInt)
                                 {
@@ -188,7 +187,7 @@ public class TFEServer
                                 // {
                                 var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                                    Debug.WriteLine("Line 71: Server received from client command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
+                                    // Debug.WriteLine("Line 71: Server received from client command: " + cmdNum + " Description: " + TransferCodeDescription.GetDescription(cmdNum));
 
 
                                     switch (cmdNum)
