@@ -5,30 +5,36 @@ using System.Threading.Tasks;
 
 namespace LanCopyFiles.TransferFilesEngine.Client;
 
-public class FileReaderEx : IDisposable
+public class FileReaderEx
 {
-    private FileStream _fileStream;
+    private FileStream _fileToRead;
 
-    public long ReceiveFilePointer { get; set; }
-    //
-    // public int ProgressValue =>
-    //     (int)Math.Ceiling((double)ReceiveFilePointer / (double)_fileStream.Length * 100);
+    public long CurrentPointerPosition { get; set; }
+
+    public int ReadingProgressValue
+    {
+        get
+        {
+            if (_fileToRead.Length == 0) return 0;
+            return (int)Math.Ceiling((double)CurrentPointerPosition / (double)_fileToRead.Length * 100);
+        }
+    }
 
     public FileReaderEx(string filePath)
     {
-        _fileStream = new FileStream(filePath, FileMode.Open);
+        _fileToRead = new FileStream(filePath, FileMode.Open);
     }
 
     public async Task<FileReadResult> ReadPartAsync()
     {
-        var offset = ReceiveFilePointer;
+        var offset = CurrentPointerPosition;
 
-        if (offset != _fileStream.Length)
+        if (offset != _fileToRead.Length)
         {
-            _fileStream.Seek(offset, SeekOrigin.Begin);
-            int tempBufferLength = (int)(_fileStream.Length - offset < 10000 ? _fileStream.Length - offset : 10000);
+            _fileToRead.Seek(offset, SeekOrigin.Begin);
+            int tempBufferLength = (int)(_fileToRead.Length - offset < 10000 ? _fileToRead.Length - offset : 10000);
             byte[] tempBuffer = new byte[tempBufferLength];
-            await _fileStream.ReadAsync(tempBuffer, 0, tempBuffer.Length);
+            await _fileToRead.ReadAsync(tempBuffer, 0, tempBuffer.Length);
 
             return new FileReadResult()
             {
@@ -38,8 +44,8 @@ public class FileReaderEx : IDisposable
         }
         else
         {
-            _fileStream.Close();
-            _fileStream = null;
+            _fileToRead.Close();
+            // _fileToRead = null;
 
             return new FileReadResult()
             {
@@ -47,34 +53,5 @@ public class FileReaderEx : IDisposable
                 ReadResultNum = 128
             };
         }
-    }
-
-
-    private bool disposed;
-
-    ~FileReaderEx()
-    {
-        this.Dispose(false);
-    }
-
-    public void Dispose()
-    {
-        this.Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposed)
-        {
-            if (disposing)
-            {
-                // Dispose managed resources here.
-            }
-
-            // Dispose unmanaged resources here.
-        }
-
-        disposed = true;
     }
 }

@@ -12,9 +12,13 @@ namespace LanCopyFiles.TransferFilesEngine.Client
     public class TFEClient
     {
         private readonly int _port;
+        private readonly string _server;
 
-        public TFEClient(int port)
+        public int ProgressValue { get; set; }
+
+        public TFEClient(string server, int port)
         {
+            _server = server;
             _port = port;
         }
 
@@ -33,7 +37,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
             var client = new AsyncTcpClient
             {
-                IPAddress = IPAddress.IPv6Loopback,
+                IPAddress = /*IPAddress.IPv6Loopback*/ IPAddress.Parse(_server),
                 Port = _port,
                 //AutoReconnect = true,
                 AutoReconnect = true,
@@ -74,7 +78,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                             if (serverCommandNum == 126)
                             {
-                                // Debug.WriteLine("Client: sending progress: " + fileReader.ProgressValue * 100 + "%");
+                                // Debug.WriteLine("Client: sending progress: " + fileReader.ReadingProgressValue * 100 + "%");
 
                                 var fileReaderResult = await fileReader.ReadPartAsync();
 
@@ -145,7 +149,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             {
                                 var cmdNum = Convert.ToInt32(Encoding.UTF8.GetString(cmdBuffer));
 
-                                fileReader.ReceiveFilePointer = long.Parse(Encoding.UTF8.GetString(dataReceivedBuffer));
+                                fileReader.CurrentPointerPosition = long.Parse(Encoding.UTF8.GetString(dataReceivedBuffer));
 
                                 ServerCommandHandlerEx.SetCommandNum(cmdNum);
                             }
