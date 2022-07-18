@@ -1,9 +1,6 @@
 ﻿using System;
-// using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-
-// using System.Timers;
 
 namespace LanCopyFiles.TransferFilesEngine.Server;
 
@@ -15,15 +12,6 @@ public class FileWriterEx
     public FileWriterEx(string filePath)
     {
         _fileStream = new FileStream(filePath, FileMode.CreateNew);
-
-        // var timer = new Timer();
-        // timer.Interval = 1000;
-        // timer.AutoReset = true;
-        // timer.Elapsed += (sender, args) =>
-        // {
-        //     Debug.WriteLine("Server: File can write? " + _fileStream.CanWrite);
-        // };
-        // timer.Start();
     }
 
     public async Task WritePartAsync(byte[] receiveData)
@@ -31,7 +19,6 @@ public class FileWriterEx
         _fileStream.Seek(CurrentFilePointer, SeekOrigin.Begin);
         await _fileStream.WriteAsync(receiveData, 0, receiveData.Length);
         CurrentFilePointer = _fileStream.Position;
-        // Debug.WriteLine("Server write file stream position: " + CurrentFilePointer);
     }
 
     public void Close()
