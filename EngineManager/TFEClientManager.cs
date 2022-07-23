@@ -6,41 +6,95 @@ namespace LanCopyFiles.TransferFilesEngine.EngineManager;
 
 public class TFEClientManager
 {
-    private static TFEClientManager _instance;
-    public static TFEClientManager Instance => _instance ?? (_instance = new TFEClientManager());
-
+    
     public TFEClientManager()
     {
         
     }
 
-    private TFEClient _tfeClient;
+    private static TFEClient _tfeClient;
 
-    public int ProgressValue
+    public static int ProgressValue
     {
         get
         {
-            if (!_isClientRunning)
+            if (_tfeClient == null)
             {
                 return 0;
             }
+
+            return _tfeClient.ProgressValue;
         }
     }
 
-    private bool _isClientRunning;
+    private static bool _isClientBusy;
 
-    public async Task Send(string filePath, string serverIP, int serverPort)
+    public static async Task<SendingResponse> Send(string filePath, string serverIP, int serverPort)
     {
-        if (_isClientRunning)
+        if (_isClientBusy)
         {
             throw new InvalidOperationException("The client is sending file to server");
         }
 
-        _isClientRunning = true;
+        _isClientBusy = true;
 
         _tfeClient = new TFEClient(serverIP, serverPort);
-        await _tfeClient.StartClient(filePath);
+        
+        try
+        {
+            await _tfeClient.StartClient(filePath);
 
-        _isClientRunning = false;
+            return new SendingResponse()
+            {
+                Status = 1,
+                Description = "Send successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            _isClientBusy = false;
+
+            return new SendingResponse()
+            {
+                Status = -1,
+                Description = "Error: " + ex.Message
+            };
+        }
+    }
+
+    public static async Task<SendingResponse> SendManyAsync(string[] filePaths, string serverIP, int serverPort)
+    {
+        if (_isClientBusy)
+        {
+            throw new InvalidOperationException("The client is sending file to server");
+        }
+
+        _isClientBusy = true;
+
+        _tfeClient = new TFEClient(serverIP, serverPort);
+        try
+        {
+            foreach (var filePath in filePaths)
+            {
+                await _tfeClient.StartClient(filePath);
+            }
+
+            return new SendingResponse()
+            {
+                Status = 1,
+                Description = "Send successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            _isClientBusy = false;
+
+            return new SendingResponse()
+            {
+                Status = -1,
+                Description = "Error: " + ex.Message
+            };
+        }
+
     }
 }

@@ -77,8 +77,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                             var serverCommandNum = await serverCommandHandlerTask;
 
                             if (serverCommandNum == 126)
-                            {
-                                // Debug.WriteLine("Client: sending progress: " + fileReader.ReadingProgressValue * 100 + "%");
+                            {                                
 
                                 var fileReaderResult = await fileReader.ReadPartAsync();
 
@@ -89,6 +88,8 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                                 await client.Send(new ArraySegment<byte>(fileDataToSendBytes, 0,
                                     fileDataToSendBytes.Length));
 
+                                // Thiet dat tien trinh gui file
+                                ProgressValue = fileReader.ReadingProgressValue;
 
                                 // Wait for server response or closed connection
                                 // await client.ByteBuffer.WaitAsync();

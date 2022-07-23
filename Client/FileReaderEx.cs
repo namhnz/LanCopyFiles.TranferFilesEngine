@@ -7,7 +7,7 @@ namespace LanCopyFiles.TransferFilesEngine.Client;
 
 public class FileReaderEx
 {
-    private FileStream _fileToRead;
+    private readonly FileStream _fileToRead;
 
     public long CurrentPointerPosition { get; set; }
 
