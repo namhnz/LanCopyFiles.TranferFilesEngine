@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
-using LanCopyFiles.TransferFilesEngine.Client;
 
-namespace LanCopyFiles.TransferFilesEngine.EngineManager;
+namespace LanCopyFiles.TransferFilesEngine.Client;
 
 public class TFEClientManager
 {
-    
+
     public TFEClientManager()
     {
-        
+
     }
 
     private static TFEClient _tfeClient;
@@ -39,7 +38,7 @@ public class TFEClientManager
         _isClientBusy = true;
 
         _tfeClient = new TFEClient(serverIP, serverPort);
-        
+
         try
         {
             await _tfeClient.StartClient(filePath);

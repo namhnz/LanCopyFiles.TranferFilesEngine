@@ -10,11 +10,49 @@ namespace LanCopyFiles.TransferFilesEngine.Server;
 
 public class TFEServer
 {
+    #region Events
+
+    // Nguon: https://stackoverflow.com/a/85188/7182661
+    public event EventHandler<TFEServerReceivingArgs> StartReceivingEvent;
+
+    public void OnStartReceiving(string receivingFileName, string fromIPAddress)
+    {
+        EventHandler<TFEServerReceivingArgs> handler = StartReceivingEvent;
+
+        if (null != handler)
+            handler(this, new TFEServerReceivingArgs()
+            {
+                FileName = receivingFileName,
+                FromIPAddress = fromIPAddress
+            });
+    }
+
+    public event EventHandler<TFEServerReceivingArgs> FinishReceivingEvent;
+
+    public void OnFinishReceiving(string receivingFileName, string fromIPAddress)
+    {
+        EventHandler<TFEServerReceivingArgs> handler = FinishReceivingEvent;
+        if (null != handler)
+            handler(this, new TFEServerReceivingArgs()
+            {
+                FileName = receivingFileName,
+                FromIPAddress = fromIPAddress
+            });
+    }
+
+    #endregion
+
     private readonly int _port;
     private string _saveTo;
 
-    public TFEServer(int port, string saveTo)
+    public TFEServer(string saveTo, int port)
     {
+
+        if (port < 0 || port >= 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(port), "The port value must be from 0 to 65,534");
+        }
+
         _port = port;
 
         // Neu saveTo la null hoac empty thi lay folder mac dinh la desktop
@@ -24,6 +62,11 @@ public class TFEServer
         if (!folderForSaving.EndsWith(@"\"))
         {
             folderForSaving += @"\";
+        }
+
+        if (!Directory.Exists(saveTo))
+        {
+            throw new DirectoryNotFoundException("The folder to save files is not found");
         }
 
         _saveTo = folderForSaving;
@@ -40,7 +83,6 @@ public class TFEServer
 
         var server = new AsyncTcpListener
         {
-            IPAddress = IPAddress.IPv6Any,
             Port = _port,
             ClientConnectedCallback = tcpClient =>
                 new AsyncTcpClient
@@ -103,9 +145,14 @@ public class TFEServer
                                     //     break;
                                     case 125:
                                     {
-                                        fileWriter =
-                                            new FileWriterEx(@"" + _saveTo +
-                                                             Encoding.UTF8.GetString(dataReceivedBuffer));
+
+                                        // Lay ten file duoc gui tu client
+                                        string fileName =Encoding.UTF8.GetString(dataReceivedBuffer);
+
+                                        // Thong bao ten file va dia chi may gui file
+                                        OnStartReceiving(fileName, tcpClient.Client.RemoteEndPoint.ToString());
+
+                                        fileWriter = new FileWriterEx(@"" + _saveTo + fileName);
 
                                         var dataToSendBytes = CreateDataPacket(Encoding.UTF8.GetBytes("126"),
                                             Encoding.UTF8.GetBytes(Convert.ToString(fileWriter.CurrentFilePointer)));
@@ -137,17 +184,22 @@ public class TFEServer
 
                                         // Let the server close the connection
                                         serverClient.Disconnect();
+
+                                        OnFinishReceiving(string.Empty, tcpClient.Client.RemoteEndPoint.ToString());
                                     }
                                         break;
                                     default:
                                         break;
-                                    // }
+
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
                             Debug.WriteLine(ex);
+
+                            OnFinishReceiving(string.Empty, tcpClient.Client.RemoteEndPoint.ToString());
+                            serverClient.Disconnect();
                             throw;
                         }
                     }
