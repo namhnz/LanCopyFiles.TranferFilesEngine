@@ -45,7 +45,7 @@ public static class ServerCommandHandlerEx
             while (!_isSettingCommandNum && !CommandAvailable || _isSettingCommandNum)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await Task.Delay(1);
+                // await Task.Delay(1);
             }
 
             int? commandInfo = null;

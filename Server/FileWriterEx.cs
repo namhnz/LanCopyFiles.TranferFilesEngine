@@ -6,25 +6,26 @@ namespace LanCopyFiles.TransferFilesEngine.Server;
 
 public class FileWriterEx
 {
-    private FileStream _fileStream;
+    private FileStream _fileWriterStream;
     public long CurrentFilePointer { get; set; }
 
     public FileWriterEx(string filePath)
     {
-        _fileStream = new FileStream(filePath, FileMode.CreateNew);
+        _fileWriterStream = new FileStream(filePath, FileMode.CreateNew);
+        
     }
 
     public async Task WritePartAsync(byte[] receiveData)
     {
-        _fileStream.Seek(CurrentFilePointer, SeekOrigin.Begin);
-        await _fileStream.WriteAsync(receiveData, 0, receiveData.Length);
-        CurrentFilePointer = _fileStream.Position;
+        _fileWriterStream.Seek(CurrentFilePointer, SeekOrigin.Begin);
+        await _fileWriterStream.WriteAsync(receiveData, 0, receiveData.Length);
+        CurrentFilePointer = _fileWriterStream.Position;
     }
 
     public void Close()
     {
-        _fileStream.Close();
-        _fileStream = null;
+        _fileWriterStream.Close();
+        _fileWriterStream = null;
         Dispose();
     }
 

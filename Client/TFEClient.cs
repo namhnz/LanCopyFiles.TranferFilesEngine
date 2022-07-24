@@ -34,13 +34,14 @@ namespace LanCopyFiles.TransferFilesEngine.Client
         private Task RunClientAsync(string filePath)
         {
             FileReaderEx fileReader = null;
+            var serverCommandHandlerCts = new CancellationTokenSource();
 
             var client = new AsyncTcpClient
             {
                 IPAddress = /*IPAddress.IPv6Loopback*/ IPAddress.Parse(_server),
                 Port = _port,
                 //AutoReconnect = true,
-                AutoReconnect = true,
+                // AutoReconnect = true,
                 ConnectedCallback = async (client, isReconnected) =>
                 {
                     Debug.WriteLine("Client connected to server");
@@ -61,7 +62,6 @@ namespace LanCopyFiles.TransferFilesEngine.Client
 
                         while (true)
                         {
-                            var serverCommandHandlerCts = new CancellationTokenSource();
 
                             var serverCommandHandlerTask =
                                 ServerCommandHandlerEx.GetCommandAsync(serverCommandHandlerCts.Token);
@@ -110,6 +110,8 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                     }
                     catch (Exception ex)
                     {
+                        serverCommandHandlerCts.Cancel();
+
                         Debug.WriteLine(ex);
                         throw;
                     }
@@ -160,8 +162,18 @@ namespace LanCopyFiles.TransferFilesEngine.Client
                     }
                     catch (Exception ex)
                     {
+                        serverCommandHandlerCts.Cancel();
+
                         Debug.WriteLine(ex);
                         throw;
+                    }
+                },
+                ClosedCallback = (client, closedByRemote) =>
+                {
+                    // Neu server da xong dong client
+                    if (closedByRemote)
+                    {
+                        serverCommandHandlerCts.Cancel();
                     }
                 }
             };

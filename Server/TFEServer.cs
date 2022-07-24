@@ -80,6 +80,7 @@ public class TFEServer
     private Task RunServer()
     {
         FileWriterEx fileWriter = null;
+        string receiveFileName = string.Empty;
 
         var server = new AsyncTcpListener
         {
@@ -95,6 +96,9 @@ public class TFEServer
                     },
                     ReceivedCallback = async (serverClient, count) =>
                     {
+                        // Lay dia chi client gui den server
+                        var sourceIPAddress = tcpClient.Client.RemoteEndPoint.ToString();
+
                         try
                         {
                             // Doc thong tin tu client gui den server, dinh dang thong du lieu: 2 cmd data-length 4 data-bytes
@@ -148,9 +152,10 @@ public class TFEServer
 
                                         // Lay ten file duoc gui tu client
                                         string fileName =Encoding.UTF8.GetString(dataReceivedBuffer);
+                                        receiveFileName = fileName;
 
                                         // Thong bao ten file va dia chi may gui file
-                                        OnStartReceiving(fileName, tcpClient.Client.RemoteEndPoint.ToString());
+                                        OnStartReceiving(fileName, sourceIPAddress);
 
                                         fileWriter = new FileWriterEx(@"" + _saveTo + fileName);
 
@@ -185,7 +190,7 @@ public class TFEServer
                                         // Let the server close the connection
                                         serverClient.Disconnect();
 
-                                        OnFinishReceiving(string.Empty, tcpClient.Client.RemoteEndPoint.ToString());
+                                        OnFinishReceiving(receiveFileName, sourceIPAddress);
                                     }
                                         break;
                                     default:
@@ -198,7 +203,7 @@ public class TFEServer
                         {
                             Debug.WriteLine(ex);
 
-                            OnFinishReceiving(string.Empty, tcpClient.Client.RemoteEndPoint.ToString());
+                            OnFinishReceiving(receiveFileName, sourceIPAddress);
                             serverClient.Disconnect();
                             throw;
                         }
